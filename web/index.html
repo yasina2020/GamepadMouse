@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>手柄当鼠标用 · 控制面板</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 40 40" aria-hidden="true">
+          <path d="M13.5 11h13c4.4 0 7 3.6 8.2 9.3l1.5 7.2c.5 2.4-1.6 4.5-4 4.5-1.4 0-2.7-.8-3.4-2l-2.3-3.8a2 2 0 0 0-1.7-1H15.2a2 2 0 0 0-1.7 1l-2.3 3.8c-.7 1.2-2 2-3.4 2-2.4 0-4.5-2.1-4-4.5l1.5-7.2C6.5 14.6 9.1 11 13.5 11Z" fill="currentColor" opacity=".16"/>
+          <path d="M13.5 11h13c4.4 0 7 3.6 8.2 9.3l1.5 7.2c.5 2.4-1.6 4.5-4 4.5-1.4 0-2.7-.8-3.4-2l-2.3-3.8a2 2 0 0 0-1.7-1H15.2a2 2 0 0 0-1.7 1l-2.3 3.8c-.7 1.2-2 2-3.4 2-2.4 0-4.5-2.1-4-4.5l1.5-7.2C6.5 14.6 9.1 11 13.5 11Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M12.5 18v6M9.5 21h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="26" cy="19.5" r="1.7" fill="currentColor"/><circle cx="29.5" cy="23" r="1.7" fill="currentColor"/>
+        </svg>
+      </div>
+      <div>
+        <h1>手柄当鼠标用</h1>
+        <p>Gamepad Mouse · 本地运行，不联网</p>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <div class="conn-badge" id="connBadge"><span class="dot"></span><span id="connText">正在检测手柄…</span></div>
+      <button class="btn-power" id="btnPower" type="button">
+        <span class="power-icon" id="powerIcon"></span><span id="powerText">启动中</span>
+      </button>
+      <button class="btn-icon" id="btnQuit" type="button" title="退出应用">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h11"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="bind-banner" id="bindBanner" hidden>
+    <span class="bind-pulse"></span>
+    <div class="bind-copy">
+      <strong id="bindTitle">请按下手柄上的按键</strong>
+      <span id="bindHint">也可以拨动摇杆 / 按十字键，12 秒内无操作自动取消</span>
+    </div>
+    <span class="bind-count" id="bindCount">12s</span>
+    <button class="btn-ghost" id="btnBindCancel" type="button">取消</button>
+  </div>
+
+  <div class="game-banner" id="gameBanner" hidden>
+    <span class="game-banner-dot"></span>
+    <div class="game-banner-copy">
+      <strong id="gameBannerTitle">游戏会话中 · 已暂停接管</strong>
+      <span id="gameBannerHint">手柄输入交给游戏；切出来查攻略也不会接管鼠标</span>
+    </div>
+    <button class="btn-mini" id="btnGameOverride" type="button">临时恢复控制</button>
+  </div>
+
+  <main class="layout">
+
+    <!-- 左栏 -->
+    <aside class="col-left">
+      <section class="card">
+        <div class="card-head">
+          <h2>设备</h2>
+          <button class="btn-mini" id="btnRescan" type="button">重新扫描</button>
+        </div>
+        <div class="device-name" id="deviceName">未检测到手柄</div>
+        <div class="device-meta">
+          <span class="tag" id="deviceLayout">—</span>
+          <span class="tag tag-soft" id="deviceBackend">—</span>
+        </div>
+        <label class="field-label" for="selDevice">使用哪个手柄</label>
+        <select id="selDevice" class="select"><option value="auto">自动选择</option></select>
+        <label class="field-label" for="selBackend">输入后端</label>
+        <select id="selBackend" class="select">
+          <option value="auto">自动（推荐）</option>
+          <option value="ns2">NS2 Pro 原生直读</option>
+          <option value="sdl2">仅 SDL2</option>
+          <option value="xinput">仅 XInput（Xbox）</option>
+        </select>
+        <p class="note" id="deviceNote">连接手柄后会自动出现在这里。</p>
+        <div class="ns2-bar" id="ns2Bar" hidden>
+          <div class="ns2-line"><span class="ns2-dot" id="ns2Dot"></span><span id="ns2Text">正在检测 NS2 Pro…</span></div>
+          <div class="ns2-actions">
+            <button class="btn-mini" id="btnWake" type="button" hidden>唤醒手柄</button>
+            <button class="btn-mini" id="btnRecenter" type="button" title="松开两个摇杆后点击，消除光标自动漂移">校准摇杆中心</button>
+            <a class="btn-mini btn-link" href="/test" target="_blank" rel="noopener">按键检测台</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>实时输入</h2><span class="muted" id="hzText">— Hz</span></div>
+        <div class="sticks">
+          <div class="stick-wrap"><div class="stick" id="stickL"><span class="stick-dot" id="dotL"></span></div><span>左摇杆</span></div>
+          <div class="stick-wrap"><div class="stick" id="stickR"><span class="stick-dot" id="dotR"></span></div><span>右摇杆</span></div>
+        </div>
+        <div class="subhead">按下的按键</div>
+        <div class="chips" id="activeChips"><span class="chip chip-empty">无</span></div>
+        <div class="subhead">全部按钮</div>
+        <div class="btn-grid" id="btnGrid"><span class="muted">等待设备…</span></div>
+      </section>
+
+      <section class="card guide-card">
+        <div class="card-head"><h2>默认操作</h2></div>
+        <ul class="guide">
+          <li><b>左摇杆</b><span>移动光标</span></li>
+          <li><b>A / 下方键</b><span>左键，按住可拖拽</span></li>
+          <li><b>B / 右方键</b><span>右键</span></li>
+          <li><b>右摇杆 ↑↓</b><span>无级滚轮</span></li>
+          <li><b>十字键 ↑↓</b><span>逐格滚动</span></li>
+          <li><b>LB / RB</b><span>上一步 / 下一步</span></li>
+          <li><b>View + Menu</b><span>暂停 / 继续</span></li>
+        </ul>
+        <p class="note">Switch Pro 与 Xbox 的 A/B 印刷字母相反，程序按「按键位置」统一映射，所以手感一致。<br>若某个窗口不响应（多见于以管理员身份运行的程序），请右键「启动.bat」选择以管理员身份运行。</p>
+      </section>
+    </aside>
+
+    <!-- 右栏 -->
+    <section class="col-right">
+      <section class="card">
+        <div class="card-head">
+          <div><h2>按键映射</h2><p class="card-sub">点「重新绑定」后，直接按手柄上的键即可完成设置</p></div>
+          <button class="btn-mini" id="btnRawDefaults" type="button">套用通用手柄映射</button>
+        </div>
+        <div id="mappingGroups" class="groups"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div><h2>游戏模式</h2><p class="card-sub">游戏运行期间自动停止接管，避免和游戏抢手柄</p></div>
+          <span class="tag tag-soft" id="gameStateTag">检测中…</span>
+        </div>
+        <div class="game-status" id="gameStatus">
+          <span class="game-status-dot"></span><span id="gameStatusText">正在检测…</span>
+        </div>
+        <div class="settings-row">
+          <div class="toggles"><label class="switch-line">
+            <input type="checkbox" id="chkGameGuard" checked> 启用游戏检测
+          </label></div>
+          <label class="field-label" for="selGameMode">避让方式</label>
+          <select id="selGameMode" class="select">
+            <option value="strict">严格 · 游戏没退出前一直不接管（推荐）</option>
+            <option value="foreground">宽松 · 只在游戏窗口处于前台时暂停</option>
+            <option value="off">关闭 · 始终接管</option>
+          </select>
+          <label class="field-label" for="selGameGrace">游戏退出后恢复延迟</label>
+          <select id="selGameGrace" class="select">
+            <option value="0">立即恢复</option>
+            <option value="2">2 秒（推荐）</option>
+            <option value="5">5 秒</option>
+          </select>
+        </div>
+        <div class="game-sub">
+          <div class="game-sub-head"><h3>游戏名单</h3>
+            <span class="muted">自动识别 Steam / Epic / Xbox 等平台游戏与全屏窗口</span></div>
+          <div class="chips" id="gameChips"><span class="muted">暂无手动添加</span></div>
+          <div class="inline-add">
+            <input id="gameNameInput" class="text-input" placeholder="例如 eldenring.exe 或 D:\Games\Foo" />
+            <button class="btn-mini" id="btnGameAdd" type="button">添加</button>
+          </div>
+        </div>
+        <div class="game-sub">
+          <div class="game-sub-head"><h3>当前有窗口的程序</h3>
+            <button class="btn-mini" id="btnGameRescan" type="button">刷新</button></div>
+          <div class="win-list" id="gameWinList"></div>
+        </div>
+        <p class="note">游戏会话期间，光标移动、左右键、滚轮、侧键全部不会注入系统；游戏退出并过了延迟后自动恢复。被误判时可点顶部「临时恢复控制」，或在这里关闭检测。</p>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>手感调节</h2><button class="btn-mini" id="btnDefaults" type="button">恢复默认</button></div>
+        <div class="sliders" id="sliders"></div>
+        <div class="settings-row">
+          <label class="field-label" for="selNav">「上一步 / 下一步」执行什么</label>
+          <select id="selNav" class="select">
+            <option value="side_buttons">鼠标侧键 · 后退 / 前进（浏览器、资源管理器）</option>
+            <option value="undo_redo">撤销 / 重做（Ctrl+Z / Ctrl+Y）</option>
+            <option value="alt_arrows">Alt + ← / →（部分软件的前进后退）</option>
+          </select>
+          <div class="toggles" id="toggles"></div>
+        </div>
+      </section>
+
+      <section class="card log-card">
+        <div class="card-head"><h2>运行日志</h2><span class="muted">最近 8 条</span></div>
+        <div class="log" id="logList"></div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <span id="footStatus">准备中…</span>
+    <span class="foot-right">关闭窗口后控制仍继续 · 再次双击「启动.bat」可重开面板 · 点右上角退出按钮才会完全停止</span>
+  </footer>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

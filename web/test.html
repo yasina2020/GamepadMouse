@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg">
+<title>手柄按键检测台 · NS2 Pro</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --card:#fff; --line:#e5e9f2; --text:#1d2433; --muted:#77809a;
+    --blue:#3b6cf6; --blue-soft:#eaf0ff; --green:#16a06a; --green-soft:#e7f7f0;
+    --amber:#d98314; --amber-soft:#fff3e2; --red:#d94b4b; --red-soft:#fdecec;
+    --mono:ui-monospace,"Cascadia Mono",Consolas,"Courier New",monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 22px 50px}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+  h1{font-size:22px;margin:0;font-weight:650;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:13px}
+  .spacer{flex:1}
+  a.ghost,.btn{border:1px solid var(--line);background:#fff;color:var(--text);
+    padding:8px 14px;border-radius:9px;cursor:pointer;font-size:13px;text-decoration:none;
+    transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  a.ghost:hover,.btn:hover{border-color:var(--blue);color:var(--blue)}
+  .btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .btn.primary:hover{filter:brightness(1.06);color:#fff}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(24,40,80,.035)}
+  .card h2{font-size:14px;margin:0 0 14px;font-weight:650;display:flex;align-items:center;gap:8px}
+  .card h2 small{font-weight:400;color:var(--muted);font-size:12px}
+  .verdict{border-radius:12px;padding:15px 18px;margin-bottom:16px;display:flex;
+    align-items:center;gap:13px;border:1px solid var(--line);background:#fff}
+  .verdict .icon{font-size:22px;width:34px;text-align:center}
+  .verdict b{display:block;font-size:15px;margin-bottom:2px}
+  .verdict span{color:var(--muted);font-size:13px}
+  .verdict.ok{background:var(--green-soft);border-color:#bce8d5}
+  .verdict.ok b{color:#0d7c52}
+  .verdict.wait{background:var(--blue-soft);border-color:#cddcff}
+  .verdict.wait b{color:#2b55cc}
+  .verdict.bad{background:var(--red-soft);border-color:#f6cccc}
+  .verdict.bad b{color:#b73434}
+  .stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:11px;
+    padding:10px 15px;min-width:112px}
+  .stat label{display:block;color:var(--muted);font-size:11px;letter-spacing:.4px}
+  .stat strong{font-size:18px;font-variant-numeric:tabular-nums}
+  .stat.good strong{color:var(--green)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:800px){.grid{grid-template-columns:1fr}}
+  .pills{display:flex;flex-wrap:wrap;gap:8px;min-height:76px;align-content:flex-start}
+  .pill{padding:7px 14px;border-radius:20px;background:var(--blue-soft);color:#2b55cc;
+    border:1px solid #cddcff;font-size:13px;font-weight:600}
+  .empty{color:var(--muted);font-size:13px;padding:8px 0}
+  .sticks{display:flex;gap:22px;margin-top:6px;justify-content:center}
+  .stick{text-align:center}
+  .pad{width:118px;height:118px;border-radius:50%;background:#f7f9fd;
+    border:1px solid var(--line);position:relative;margin:0 auto 6px}
+  .pad .cross{position:absolute;background:#e8ecf5}
+  .pad .cross.h{left:10%;right:10%;height:1px;top:50%}
+  .pad .cross.v{top:10%;bottom:10%;width:1px;left:50%}
+  .dot{position:absolute;width:22px;height:22px;border-radius:50%;background:var(--blue);
+    left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 2px 6px rgba(59,108,246,.4);
+    transition:left .05s linear,top .05s linear}
+  .stick b{font-size:12px;font-weight:600}
+  .stick .val{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .matrix{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+  .key{border:1px solid var(--line);border-radius:8px;padding:8px 4px;text-align:center;
+    font-size:12px;color:var(--muted);background:#fafbfe;transition:.08s;white-space:nowrap}
+  .key.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700;
+    box-shadow:0 2px 8px rgba(59,108,246,.3)}
+  .hex{font-family:var(--mono);font-size:12px;display:grid;grid-template-columns:repeat(16,1fr);
+    gap:3px;margin-top:4px}
+  .hex span{text-align:center;padding:4px 0;border-radius:4px;background:#f7f9fd;color:#4a5468}
+  .hex span.btnzone{background:var(--blue-soft);color:#2b55cc}
+  .hex span.stickzone{background:var(--amber-soft);color:#9b6010}
+  .hex span.changed{background:var(--red);color:#fff;font-weight:700}
+  .legend{display:flex;gap:16px;margin-top:12px;color:var(--muted);font-size:12px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;
+    vertical-align:-1px;margin-right:5px}
+  .events{max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+  .ev{display:flex;gap:12px;padding:7px 13px;border-bottom:1px solid #f0f2f7;font-size:13px;
+    align-items:baseline}
+  .ev:last-child{border-bottom:0}
+  .ev time{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:78px}
+  .ev .tag{font-size:11px;padding:1px 7px;border-radius:5px;min-width:42px;text-align:center}
+  .ev.down .tag{background:var(--green-soft);color:#0d7c52}
+  .ev.up .tag{background:#f0f2f7;color:var(--muted)}
+  .ev.axis .tag{background:var(--amber-soft);color:#9b6010}
+  .ev.log .tag{background:var(--blue-soft);color:#2b55cc}
+  .ev.down{font-weight:600}
+  .note{color:var(--muted);font-size:12px;margin-top:10px;line-height:1.7}
+  code{font-family:var(--mono);background:#f0f2f7;padding:1px 5px;border-radius:4px;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>手柄按键检测台</h1>
+      <div class="sub">Nintendo Switch 2 Pro · 直接读取 64 字节 HID 原始报告</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn primary" id="btnInit">重新唤醒手柄</button>
+    <button class="btn" id="btnClear">清空记录</button>
+    <a class="ghost" href="/">返回控制面板</a>
+  </header>
+
+  <div class="verdict wait" id="verdict">
+    <div class="icon">⏳</div>
+    <div><b id="verdictTitle">正在连接手柄…</b><span id="verdictText">请稍候</span></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><label>数据状态</label><strong id="stStream">—</strong></div>
+    <div class="stat"><label>报告频率</label><strong id="stHz">—</strong></div>
+    <div class="stat"><label>累计报告</label><strong id="stCount">0</strong></div>
+    <div class="stat"><label>报告 ID</label><strong id="stId">—</strong></div>
+    <div class="stat"><label>检测到的按键</label><strong id="stKeys">0</strong></div>
+    <div class="stat"><label>SDL2 读到的轴</label><strong id="stSdl">—</strong></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>当前按下的键 <small>按一下手柄任意键试试</small></h2>
+      <div class="pills" id="pills"><div class="empty">等待按键…</div></div>
+      <div class="sticks">
+        <div class="stick"><div class="pad" id="padL">
+          <div class="cross h"></div><div class="cross v"></div><div class="dot" id="dotL"></div>
+        </div><b>左摇杆</b><div class="val" id="valL">—</div></div>
+        <div class="stick"><div class="pad" id="padR">
+          <div class="cross h"></div><div class="cross v"></div><div class="dot" id="dotR"></div>
+        </div><b>右摇杆</b><div class="val" id="valR">—</div></div>
+      </div>
+      <div class="note">摇杆为 12 位原始值（中位约 2048）。推动摇杆时圆点会跟着移动。</div>
+    </div>
+
+    <div class="card">
+      <h2>按键矩阵 <small>按下时对应格子亮起</small></h2>
+      <div class="matrix" id="matrix"></div>
+      <div class="note">A / B / X / Y 按手柄上的<b>印刷字母</b>标注，与 Xbox 的位置正好相反。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>原始 HID 报告 <small>64 字节 · 红色 = 与上一帧相比发生变化的字节</small></h2>
+    <div class="hex" id="hex"></div>
+    <div class="legend">
+      <span><i style="background:#eaf0ff"></i>按钮位（字节 5–8）</span>
+      <span><i style="background:#fff3e2"></i>摇杆位（字节 11–16）</span>
+      <span><i style="background:#d94b4b"></i>本帧变化</span>
+      <span>字节 1–4 是递增计数器</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>检测记录 <small>按下 / 松开 / 摇杆移动，最新在上</small></h2>
+    <div class="events" id="events"><div class="ev log"><time>—</time><span class="tag">日志</span><span>等待数据…</span></div></div>
+    <div class="note">这份记录保存在后台服务里，即使关掉页面也不会丢；点「清空记录」可重来。</div>
+  </div>
+</div>
+
+<script>
+const LABELS = ["Y","X","B","A","R","ZR","− 减号","+ 加号","右摇杆按下","左摇杆按下",
+  "HOME","截图","C","十字键 ↓","十字键 ↑","十字键 →","十字键 ←","L","ZL","GL 背键","GR 背键"];
+const $ = s => document.querySelector(s);
+let neutral = null, everDown = new Set(), lastEventCount = 0;
+
+LABELS.forEach(n => {
+  const d = document.createElement('div');
+  d.className = 'key'; d.textContent = n; d.dataset.key = n;
+  $('#matrix').appendChild(d);
+});
+
+function norm(v, c){ const span = v < c ? Math.max(1,c) : Math.max(1,4095-c);
+  return Math.max(-1, Math.min(1,(v-c)/span)); }
+function place(dot, x, y){
+  dot.style.left = (50 + x*38) + '%'; dot.style.top = (50 + y*38) + '%';
+}
+
+function render(d){
+  const flowing = d.reports > 0 && d.hz > 1;
+  const downs = d.events.filter(e => e.kind === 'down');
+  downs.forEach(e => everDown.add(e.text));
+  $('#stKeys').textContent = everDown.size;
+  $('#stStream').textContent = flowing ? (d.streaming ? '有输入' : '空闲') : '无数据';
+  $('#stStream').parentElement.classList.toggle('good', flowing);
+  $('#stHz').textContent = d.hz ? d.hz + ' Hz' : '—';
+  $('#stCount').textContent = d.reports;
+  $('#stId').textContent = d.last_report ? '0x' + d.last_report : '—';
+
+  const v = $('#verdict');
+  if (downs.length){
+    v.className = 'verdict ok';
+    v.querySelector('.icon').textContent = '✅';
+    $('#verdictTitle').textContent = '检测到按键了！';
+    $('#verdictText').textContent = '已识别：' + [...everDown].join('、') + '　（共 ' + downs.length + ' 次按下）';
+  } else if (flowing){
+    v.className = 'verdict wait';
+    v.querySelector('.icon').textContent = '🎮';
+    $('#verdictTitle').textContent = '报告流正常，等你按键';
+    $('#verdictText').textContent = '数据以 ' + d.hz + ' Hz 持续进入，按任意键或推动摇杆，这里会立刻变成绿色。';
+  } else {
+    v.className = 'verdict bad';
+    v.querySelector('.icon').textContent = '⚠️';
+    $('#verdictTitle').textContent = '还没收到有效报告';
+    $('#verdictText').textContent = d.error || '确认手柄用 USB 线连着，然后点「重新唤醒手柄」。';
+  }
+
+  const pressed = new Set(d.buttons || []);
+  $('#pills').innerHTML = pressed.size
+    ? [...pressed].map(n => '<span class="pill">' + n + '</span>').join('')
+    : '<div class="empty">当前没有按键，按一下试试</div>';
+  document.querySelectorAll('.key').forEach(el =>
+    el.classList.toggle('on', pressed.has(el.dataset.key)));
+
+  const a = d.axes || {};
+  if (a.LX !== undefined){
+    if (!neutral) neutral = {LX:a.LX,LY:a.LY,RX:a.RX,RY:a.RY};
+    place($('#dotL'), norm(a.LX,neutral.LX), norm(a.LY,neutral.LY));
+    place($('#dotR'), norm(a.RX,neutral.RX), norm(a.RY,neutral.RY));
+    $('#valL').textContent = 'X ' + a.LX + ' / Y ' + a.LY;
+    $('#valR').textContent = 'X ' + a.RX + ' / Y ' + a.RY;
+  }
+
+  const bytes = (d.hex || '').trim() ? d.hex.trim().split(' ') : [];
+  const changed = new Set(d.changed || []);
+  $('#hex').innerHTML = bytes.map((b,i) => {
+    let c = '';
+    if (changed.has(i)) c = 'changed';
+    else if (i >= 5 && i <= 8) c = 'btnzone';
+    else if (i >= 11 && i <= 16) c = 'stickzone';
+    return '<span class="' + c + '">' + b + '</span>';
+  }).join('');
+
+  const evs = d.events.slice().reverse().slice(0,60);
+  $('#events').innerHTML = evs.length ? evs.map(e => {
+    const t = new Date(e.t);
+    const hh = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0')
+      + ':' + String(t.getSeconds()).padStart(2,'0') + '.' + String(t.getMilliseconds()).padStart(3,'0');
+    const names = {down:'按下',up:'松开',axis:'摇杆',log:'日志'};
+    return '<div class="ev ' + e.kind + '"><time>' + hh + '</time><span class="tag">'
+      + (names[e.kind]||e.kind) + '</span><span>' + e.text + '</span></div>';
+  }).join('') : '<div class="ev log"><time>—</time><span class="tag">日志</span><span>还没有事件</span></div>';
+}
+
+async function tick(){
+  try{
+    const r = await fetch('/api/probe', {cache:'no-store'});
+    render(await r.json());
+  }catch(e){}
+  try{
+    const s = await (await fetch('/api/state',{cache:'no-store'})).json();
+    const ax = (s.inputs && s.inputs.axes) || {};
+    $('#stSdl').textContent = Object.values(ax).some(v => Math.abs(v) > 0.02) ? '有变化' : '全 0';
+  }catch(e){}
+}
+$('#btnInit').addEventListener('click', async () => {
+  $('#btnInit').textContent = '正在发送…';
+  await fetch('/api/probe/init', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+  setTimeout(() => { $('#btnInit').textContent = '重新唤醒手柄'; }, 1200);
+});
+$('#btnClear').addEventListener('click', async () => {
+  await fetch('/api/probe/clear', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+  everDown.clear(); neutral = null; tick();
+});
+tick(); setInterval(tick, 90);
+</script>
+</body>
+</html>
